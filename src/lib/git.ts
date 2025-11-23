@@ -10,6 +10,25 @@ export interface FileCommit {
 
 const git = simpleGit()
 
+export async function getFileContentAtCommit(
+  slug: string,
+  type: 'trails' | 'field-notes',
+  commitHash: string
+): Promise<string | null> {
+  try {
+    const filePath = type === 'trails'
+      ? `content/trails/${slug}/index.mdx`
+      : `content/field-notes/${slug}.md`
+
+    // Get the file content at a specific commit
+    const result = await git.show([`${commitHash}:${filePath}`])
+    return result
+  } catch (error) {
+    console.warn(`Could not get file content at commit ${commitHash}:`, error)
+    return null
+  }
+}
+
 export async function getFileHistory(
   slug: string,
   type: 'trails' | 'field-notes'

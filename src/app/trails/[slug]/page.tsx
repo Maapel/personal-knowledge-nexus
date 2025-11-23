@@ -1,26 +1,132 @@
-import { getTrail, getAllTrails } from '@/lib/mdx'
+'use client'
+
 import { getFileHistory, FileCommit } from '@/lib/git'
-import { notFound } from 'next/navigation'
-import { MDXRemote } from 'next-mdx-remote/rsc'
+import { useState, useEffect } from 'react'
+import ReactMarkdown, { Components } from 'react-markdown'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Calendar, GitBranch, User } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, Calendar, GitBranch, User, RotateCcw, History } from 'lucide-react'
 import Link from 'next/link'
 
-export async function generateStaticParams() {
-  const trails = await getAllTrails()
-  return trails.map((trail) => ({
-    slug: trail.slug,
-  }))
+const markdownComponents: Components = {
+  h1: ({ children }) => <h1 className="text-3xl font-bold mb-4 mt-8 scroll-m-20">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-2xl font-bold mb-3 mt-6 scroll-m-20">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-xl font-semibold mb-2 mt-4">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-lg font-medium mb-2 mt-4">{children}</h4>,
+  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
+  ul: ({ children }) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
+  li: ({ children }) => <li className="mb-1">{children}</li>,
+  code: ({ className, children }) => {
+    const isInline = !className?.includes('language-')
+    return (
+      <code className={`font-mono text-sm ${
+        isInline
+          ? 'bg-secondary/50 px-1.5 py-0.5 rounded text-primary'
+          : 'font-mono'
+      }`}>
+        {children}
+      </code>
+    )
+  },
+  pre: ({ children }) => (
+    <pre className="bg-secondary/50 border border-border rounded-lg p-4 mb-4 overflow-x-auto">
+      {children}
+    </pre>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
+      {children}
+    </blockquote>
+  ),
+  a: ({ children, href }) => (
+    <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
 }
 
-export default async function TrailPage({ params }: { params: { slug: string } }) {
-  const [trail, history] = await Promise.all([
-    getTrail(params.slug),
-    getFileHistory(params.slug, 'trails')
-  ])
+interface SerializedContent {
+  compiledSource: string
+  scope?: Record<string, unknown>
+}
+
+export default function TrailPage({ params }: { params: { slug: string } }) {
+  const [trail, setTrail] = useState<any>(null)
+  const [history, setHistory] = useState<FileCommit[]>([])
+  const [currentContent, setCurrentContent] = useState<string>('')
+  const [originalContent, setOriginalContent] = useState<string>('')
+  const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Fetch current trail data
+        const response = await fetch(`${window.location.origin}/api/trails/${params.slug}`)
+        if (!response.ok) throw new Error('Failed to load trail')
+
+        const data = await response.json()
+        setTrail(data.trail || {})
+        setOriginalContent(data.content || '')
+        setCurrentContent(data.content || '')
+
+        // Fetch git history
+        const historyRes = await fetch(`${window.location.origin}/api/trails/${params.slug}/history`)
+        if (historyRes.ok) {
+          const historyData = await historyRes.json()
+          setHistory(historyData)
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [params.slug])
+
+  const switchToVersion = async (commitHash: string) => {
+    try {
+      const response = await fetch(`${window.location.origin}/api/trails/${params.slug}?commit=${commitHash}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentContent(data.content)
+        setSelectedCommit(commitHash)
+      }
+    } catch (error) {
+      console.error('Error switching version:', error)
+    }
+  }
+
+  const returnToCurrent = () => {
+    setCurrentContent(originalContent)
+    setSelectedCommit(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <GitBranch className="w-8 h-8 mx-auto mb-4 animate-pulse" />
+          <p className="text-muted-foreground">Loading trail...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!trail) {
-    notFound()
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg mb-4">Trail not found</p>
+          <Link href="/" className="text-primary hover:underline">
+            Back to Nexus
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -66,7 +172,9 @@ export default async function TrailPage({ params }: { params: { slug: string } }
           prose-a:text-primary prose-a:no-underline hover:prose-a:underline
           prose-pre:bg-secondary/50 prose-pre:border prose-pre:border-border
         ">
-          <MDXRemote source={trail.content} />
+          <ReactMarkdown components={markdownComponents}>
+            {currentContent}
+          </ReactMarkdown>
         </div>
 
         {/* Changelog Section */}
@@ -78,8 +186,36 @@ export default async function TrailPage({ params }: { params: { slug: string } }
             </div>
 
             <div className="space-y-6">
+              {selectedCommit && (
+                <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-primary" />
+                      <span className="text-sm font-medium">Viewing historical version</span>
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {selectedCommit}
+                      </Badge>
+                    </div>
+                    <Button
+                      onClick={returnToCurrent}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Return to Current
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {history.map((commit, index) => (
-                <div key={commit.hash} className="flex gap-4">
+                <div
+                  key={commit.hash}
+                  className={`flex gap-4 cursor-pointer hover:bg-secondary/20 p-4 -m-4 rounded-lg transition-colors ${
+                    selectedCommit === commit.hash ? 'bg-primary/20 border-2 border-primary/50' : ''
+                  }`}
+                  onClick={() => switchToVersion(commit.hash)}
+                >
                   {/* Timeline indicator */}
                   <div className="flex flex-col items-center">
                     <div className="w-3 h-3 bg-primary rounded-full flex-shrink-0" />
