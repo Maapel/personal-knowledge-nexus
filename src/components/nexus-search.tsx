@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Book, Bot, X } from 'lucide-react'
+import { Search, Book, Bot, X, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -23,12 +23,25 @@ interface SearchResponse {
   timestamp: string
 }
 
+interface AskResponse {
+  answer: string
+  sources: Array<{
+    slug: string
+    title: string
+    type: string
+    url: string
+  }>
+  simulated: boolean
+}
+
 export function NexusSearch() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [aiAnswer, setAiAnswer] = useState<AskResponse | null>(null)
+  const [isAnswering, setIsAnswering] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -86,10 +99,44 @@ export function NexusSearch() {
     }
   }
 
+  const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && query.trim()) {
+      e.preventDefault()
+
+      // Reset previous AI answer
+      setAiAnswer(null)
+
+      // Ask AI for an answer
+      setIsAnswering(true)
+      try {
+        const response = await fetch('/api/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: query.trim() }),
+        })
+
+        if (response.ok) {
+          const data: AskResponse = await response.json()
+          setAiAnswer(data)
+        } else {
+          console.error('AI ask failed:', response.status)
+        }
+      } catch (error) {
+        console.error('AI ask error:', error)
+      } finally {
+        setIsAnswering(false)
+      }
+    }
+  }
+
   const resetSearch = () => {
     setQuery('')
     setResults([])
+    setAiAnswer(null)
     setIsLoading(false)
+    setIsAnswering(false)
     setIsOpen(false)
     setIsSearchMode(false)
   }
@@ -134,8 +181,9 @@ export function NexusSearch() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
               onBlur={handleInputBlur}
-              placeholder="Search documentation, field notes..."
+              placeholder="Ask Nexus anything about your knowledge base..."
               className="w-full px-3 py-2 bg-background/50 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm transition-all"
             />
             {query && (
@@ -163,12 +211,57 @@ export function NexusSearch() {
             </div>
           )}
 
+          {/* AI Answer */}
+          {aiAnswer && (
+            <div className="border-l-4 border-primary bg-muted/50 p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Nexus Intelligence</span>
+                {aiAnswer.simulated && (
+                  <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded">
+                    Simulation Mode
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-foreground leading-relaxed mb-3">
+                {aiAnswer.answer}
+              </div>
+              {aiAnswer.sources && aiAnswer.sources.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {aiAnswer.sources.map((source, index) => (
+                    <Link
+                      key={source.slug}
+                      href={source.url}
+                      className="text-xs bg-primary/20 text-primary hover:bg-primary/30 px-2 py-1 rounded transition-colors"
+                    >
+                      {source.title}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* AI Thinking State */}
+          {isAnswering && (
+            <div className="border-l-4 border-primary bg-muted/50 p-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                <span className="text-sm font-medium text-primary">Nexus is thinking...</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Analyzing your knowledge base for the best answer
+              </p>
+            </div>
+          )}
+
           {/* Search Results */}
           {!isLoading && results.length > 0 && (
             <div className="max-h-96 overflow-y-auto">
               <div className="p-2 border-b border-border/50">
                 <span className="text-xs text-muted-foreground px-2">
                   {results.length} result{results.length !== 1 ? 's' : ''}
+                  {aiAnswer && ' • AI answer available above'}
                 </span>
               </div>
 
