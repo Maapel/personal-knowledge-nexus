@@ -34,6 +34,11 @@ const navItems = [
     icon: BookOpen,
   },
   {
+    href: '/map',
+    label: 'Neural Map',
+    icon: Home, // Using Home icon as a brain-like symbol
+  },
+  {
     href: '/settings',
     label: 'Settings',
     icon: Settings,
