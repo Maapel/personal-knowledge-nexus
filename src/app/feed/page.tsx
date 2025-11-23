@@ -74,6 +74,7 @@ export default async function Feed() {
               return (
                 <Card
                   key={note.slug}
+                  id={`incident-${note.slug}`}
                   className={`glass ${borderColor} border-2 relative overflow-hidden`}
                 >
                   <CardHeader className={`pb-4 ${bgColor}`}>

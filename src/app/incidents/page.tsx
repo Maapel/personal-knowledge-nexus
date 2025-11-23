@@ -99,13 +99,17 @@ export default async function IncidentsPage() {
               const isFailure = incident.status === 'failure'
 
               return (
-                <Card
+                <a
                   key={incident.slug}
-                  className={`${isFailure
-                    ? 'glass border-red-500/30 bg-red-500/5'
-                    : 'glass border-yellow-500/30 bg-yellow-500/5'
-                  } hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105`}
+                  href={`/feed#incident-${incident.slug}`}
+                  className="block"
                 >
+                  <Card
+                    className={`${isFailure
+                      ? 'glass border-red-500/30 bg-red-500/5'
+                      : 'glass border-yellow-500/30 bg-yellow-500/5'
+                    } hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105`}
+                  >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -155,7 +159,8 @@ export default async function IncidentsPage() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                  </Card>
+                </a>
               )
             })}
           </div>
