@@ -1,12 +1,6 @@
 import simpleGit, { DefaultLogFields } from 'simple-git'
 import path from 'path'
-
-export interface FileCommit {
-  hash: string
-  date: string
-  message: string
-  author_name: string
-}
+import { FileCommit } from './types'
 
 const git = simpleGit()
 

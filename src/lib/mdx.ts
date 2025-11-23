@@ -1,29 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
-
-export interface MDXContent {
-  frontmatter: Record<string, any>
-  content: string
-  slug: string
-}
-
-export interface TrailData {
-  title: string
-  description: string
-  status: 'Active' | 'Archived' | 'Mastered'
-  progress: number
-  slug: string
-}
-
-export interface FieldNoteData {
-  date: string
-  title: string
-  status: 'success' | 'failure'
-  content: string
-  slug: string
-  frontmatter: Record<string, any>
-}
+import { MDXContent, TrailData, FieldNoteData } from './types'
 
 // Read all trails from /content/trails
 export async function getAllTrails(): Promise<TrailData[]> {

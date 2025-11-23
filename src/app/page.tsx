@@ -120,9 +120,23 @@ export default async function Dashboard() {
             View Agent Feed →
           </a>
         </div>
-        <div className="mt-4 p-6 glass rounded-xl">
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/feed"
+              className="px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors flex items-center gap-2"
+            >
+              🤖 Agent Feed →
+            </a>
+            <a
+              href="/incidents"
+              className="px-4 py-2 text-sm font-medium text-orange-600 border border-orange-600/30 rounded-lg hover:bg-orange-600/5 transition-colors flex items-center gap-2"
+            >
+              🚨 Incident Room →
+            </a>
+          </div>
           <p className="text-muted-foreground text-center">
-            Check the <a href="/feed" className="text-primary hover:underline">Agent Feed</a> to see the latest field notes and automated documentation updates from your AI agents.
+            Monitor agent activities and analyze operational incidents through our specialized dashboards.
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { getFileHistory, FileCommit } from '@/lib/git'
+import { FileCommit } from '@/lib/types'
 import { useState, useEffect } from 'react'
 import ReactMarkdown, { Components } from 'react-markdown'
 import { Badge } from '@/components/ui/badge'
