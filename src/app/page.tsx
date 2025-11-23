@@ -1,9 +1,10 @@
-import { getAllTrails } from '@/lib/mdx'
+import { getAllTrails, getAllFieldNotes } from '@/lib/mdx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen, Archive, Trophy, Target } from 'lucide-react'
+import { BookOpen, Archive, Trophy, Target, Activity } from 'lucide-react'
 import { NexusSearch } from '@/components/nexus-search'
+import { ActivityHeatmap } from '@/components/visuals/activity-heatmap'
 import Link from 'next/link'
 
 const statusIcons = {
@@ -20,6 +21,7 @@ const statusColors = {
 
 export default async function Dashboard() {
   const trails = await getAllTrails()
+  const fieldNotes = await getAllFieldNotes()
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -36,6 +38,24 @@ export default async function Dashboard() {
         <div className="max-w-2xl mx-auto mb-12">
           <NexusSearch />
         </div>
+      </div>
+
+      {/* System Status - Activity Heatmap */}
+      <div className="mb-8">
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              System Activity (Last 14 Days)
+            </CardTitle>
+            <CardDescription>
+              Agent operations: green bars for successful logs, red bars for failures
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ActivityHeatmap data={fieldNotes} />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mb-6">
