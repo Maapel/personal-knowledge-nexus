@@ -22,10 +22,44 @@ This trail covers the fundamental concepts, algorithms, and practical implementa
 2. **SARSA** - On-policy temporal difference learning
 3. **Deep Q Networks (DQN)** - Neural network approximation
 4. **Policy Gradient Methods** - Direct policy optimization
+5. **Actor-Critic Methods** - Combining value and policy approaches
+
+## Practical Implementation
+
+### Getting Started with Python
+```python
+import gym
+import numpy as np
+
+# Create environment
+env = gym.make('CartPole-v1')
+
+# Reset environment
+state = env.reset()
+print(f"Initial state: {state}")
+```
+
+### Key Libraries
+- **OpenAI Gym** - Environment for RL experiments
+- **Stable Baselines3** - High-quality implementations
+- **Ray RLlib** - Scalable distributed RL
+
+## Advanced Topics
+
+This section covers cutting-edge research and applications:
+
+- **Multi-Agent Systems**: Coordinating multiple learning agents
+- **Hierarchical Reinforcement Learning**: Breaking complex tasks into sub-tasks
+- **Transfer Learning**: Applying knowledge from one domain to another
 
 ## Progress Overview
 
 - [x] Markov Decision Processes
 - [x] Dynamic Programming
-- [ ] Monte Carlo Methods
-- [ ] Temporal Difference Learning
+- [x] Monte Carlo Methods (Updated with new examples)
+- [x] Temporal Difference Learning
+- [ ] Sample Project Implementation
+
+---
+
+*Last updated: 2025-11-23 | Version 2.1 - Added practical implementation guide*
