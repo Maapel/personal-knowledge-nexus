@@ -8,7 +8,8 @@ import {
   AlertTriangle,
   BookOpen,
   Settings,
-  Home
+  Home,
+  Network
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +37,7 @@ const navItems = [
   {
     href: '/map',
     label: 'Neural Map',
-    icon: Home, // Using Home icon as a brain-like symbol
+    icon: Network,
   },
   {
     href: '/settings',
