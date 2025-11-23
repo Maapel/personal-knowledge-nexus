@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { BookOpen, Archive, Trophy, Target } from 'lucide-react'
+import Link from 'next/link'
 
 const statusIcons = {
   Active: Target,
@@ -69,10 +70,11 @@ export default async function Dashboard() {
             const statusColor = statusColors[trail.status]
 
             return (
-              <Card
-                key={trail.slug}
-                className="glass hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105"
-              >
+              <Link href={`/trails/${trail.slug}`}>
+                <Card
+                  key={trail.slug}
+                  className="glass hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105"
+                >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-xl group-hover:text-primary transition-colors">
@@ -99,6 +101,7 @@ export default async function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             )
           })}
         </div>
