@@ -24,19 +24,17 @@ export default async function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <BookOpen className="w-8 h-8" />
-              Personal Knowledge Nexus
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Your gamified documentation library and agent field notes hub
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <NexusSearch />
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
+            <BookOpen className="w-8 h-8" />
+            Personal Knowledge Nexus
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Your gamified documentation library and agent field notes hub
+          </p>
+        </div>
+        <div className="max-w-2xl mx-auto mb-12">
+          <NexusSearch />
         </div>
       </div>
 
