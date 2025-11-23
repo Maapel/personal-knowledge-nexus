@@ -67,7 +67,7 @@ export async function buildSearchIndex(): Promise<Fuse<SearchResult>> {
       { name: 'status', weight: 1 }
     ],
     includeScore: true,
-    threshold: 0.4, // Lower = more strict matching, 0-1
+    threshold: 0.6, // Lower = more strict matching, 0-1
     minMatchCharLength: 2,
     shouldSort: true,
     includeMatches: true
