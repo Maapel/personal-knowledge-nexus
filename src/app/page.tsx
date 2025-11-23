@@ -46,7 +46,7 @@ export default async function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              System Activity (Last 14 Days)
+              System Activity (Last 7 Days)
             </CardTitle>
             <CardDescription>
               Agent operations: green bars for successful logs, red bars for failures

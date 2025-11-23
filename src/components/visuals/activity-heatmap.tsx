@@ -11,9 +11,9 @@ interface ActivityHeatmapProps {
 
 export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   const chartData = useMemo(() => {
-    // Get last 14 days
+    // Get last 7 days
     const endDate = new Date()
-    const startDate = subDays(endDate, 13)
+    const startDate = subDays(endDate, 6)
     const days = eachDayOfInterval({ start: startDate, end: endDate })
 
     // Group notes by date
@@ -40,8 +40,8 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   }, [data])
 
   return (
-    <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full" style={{ minHeight: '200px' }}>
+      <ResponsiveContainer width="100%" height={200}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <XAxis
             dataKey="date"
