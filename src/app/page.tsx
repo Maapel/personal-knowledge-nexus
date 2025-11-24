@@ -11,11 +11,10 @@ export default async function Dashboard() {
   const trails = await getAllTrails()
   const notes = await getAllFieldNotes()
 
-  // Calculate actual success rate from recent logs
-  const recentNotes = notes.slice(-20) // Last 20 notes
-  const successCount = recentNotes.filter(n => n.status === 'success').length
-  const successRate = recentNotes.length > 0 ? Math.round((successCount / recentNotes.length) * 100) : 100
-  const totalArtifacts = trails.length + notes.length
+  // Calculate stats
+  const successCount = notes.filter(n => n.status === 'success').length
+  const successRate = notes.length > 0 ? Math.round((successCount / notes.length) * 100) + '%' : '100%'
+  const totalItems = trails.length + notes.length
 
   return (
     <div className="max-w-[1400px] mx-auto p-6 space-y-6">
@@ -32,7 +31,7 @@ export default async function Dashboard() {
       </div>
 
       {/* Status Overview */}
-      <QuickStats totalKnowledge={totalArtifacts} successRate={successRate} />
+      <QuickStats totalItems={totalItems} successRate={successRate} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-12 gap-6 min-h-[600px]">
