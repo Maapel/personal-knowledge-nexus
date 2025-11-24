@@ -77,7 +77,7 @@ export function Sidebar() {
 
       <div className="absolute bottom-6 left-6 right-6">
         <div className="text-xs text-muted-foreground">
-          Agent Operating System v2.0
+          Nxxus O3
         </div>
       </div>
     </div>
