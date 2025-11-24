@@ -2,17 +2,14 @@ import { getAllTrails, getAllFieldNotes } from '@/lib/mdx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen, Activity, Zap, Target, Archive, Radar } from 'lucide-react'
+import { BookOpen, Activity, Zap, Target, Archive } from 'lucide-react'
 import Link from 'next/link'
 import { NexusSearch } from '@/components/nexus-search'
 import { ActivityHeatmap } from '@/components/visuals/activity-heatmap'
-import { CodeDependencyScanner } from '@/lib/code-scanner'
 
 export default async function Dashboard() {
   const trails = await getAllTrails()
   const fieldNotes = await getAllFieldNotes()
-  const scanner = new CodeDependencyScanner()
-  const xrayProjects = await scanner.listScannedProjects()
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 container py-8">
@@ -116,34 +113,6 @@ export default async function Dashboard() {
           </div>
         </div>
       </div>
-
-      {/* Project X-Rays Section */}
-      {xrayProjects.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2"><Radar className="w-5 h-5"/> Project X-Rays</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {xrayProjects.map((project) => (
-              <Link href={`/xray/${project}`} key={project}>
-                <Card className="glass hover:bg-muted/50 transition-colors cursor-pointer">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-base font-medium">
-                      {project}
-                    </CardTitle>
-                    <Radar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-muted-foreground">
-                      Code architecture analysis
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

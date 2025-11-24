@@ -8,8 +8,7 @@ import {
   AlertTriangle,
   BookOpen,
   Settings,
-  Home,
-  Network
+  Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -33,11 +32,6 @@ const navItems = [
     href: '/trails',
     label: 'Knowledge Trails',
     icon: BookOpen,
-  },
-  {
-    href: '/map',
-    label: 'Neural Map',
-    icon: Network,
   },
   {
     href: '/settings',
