@@ -32,16 +32,20 @@ import uuid
 
 def find_nexus_content_root():
     """
-    Find the Nexus content root directory, checking in this order:
-    1. NEXUS_CONTENT_PATH environment variable
-    2. .env.local file (same as web app)
-    3. Auto-detection fallbacks
+    Find the Nexus content root directory.
+
+    Args:
+       
+    1. .env.local file config
 
     Returns:
         str: Path to the Nexus content root directory
     """
-    
-    # Second, check .env.local file (same as web app)
+    # Script directory (resistant to execution location)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+   
+    # Global config priority (for MCP server, web app)
     env_local_path = find_env_local_file()
     if env_local_path:
         env_vars = parse_env_file(env_local_path)
@@ -50,48 +54,12 @@ def find_nexus_content_root():
             content_path = os.path.expanduser(content_path)
             if os.path.exists(content_path):
                 return content_path
-
-    # Fallback: search upwards for content directories (legacy project structure)
-    current_path = os.getcwd()
-    for _ in range(10):
-        # Look for content indicators
-        indicators = [
-            'content',
-            'content/trails',
-            'content/field-notes'
-        ]
-
-        found_indicators = []
-        for indicator in indicators:
-            indicator_path = os.path.join(current_path, indicator)
-            if os.path.exists(indicator_path):
-                found_indicators.append(indicator)
-
-        # If we find content directories, this is a legacy project root
-        if len(found_indicators) >= 2:
-            # This will be the project root, content is in `content/` subdirectory
-            return os.path.join(current_path, 'content')
-
-        # Go up one directory
-        parent_path = os.path.dirname(current_path)
-        if parent_path == current_path:  # Reached filesystem root
-            break
-        current_path = parent_path
-
-    # Fallback: try the parent directory of parent for nexus-content repos
-    parent_dir = os.path.dirname(os.path.dirname(os.getcwd()))
-    if os.path.exists(os.path.join(parent_dir, 'nexus-content')):
-        return os.path.join(parent_dir, 'nexus-content')
-
-    # Final fallback: return a content directory in current directory
-    content_dir = os.path.join(os.getcwd(), 'content')
-    os.makedirs(content_dir, exist_ok=True)
-    return content_dir
-
+    return None
+    
 
 def find_env_local_file():
     """Find the .env.local file by searching up the directory tree."""
-    current_path = os.getcwd()
+    current_path = os.path.dirname(os.path.abspath(__file__))
     for _ in range(10):
         env_local_path = os.path.join(current_path, '.env.local')
         if os.path.exists(env_local_path):
@@ -124,7 +92,7 @@ def parse_env_file(env_file_path):
 def get_project_root():
     """Get the absolute path to the Nexus project root directory."""
     # Try to find project root (for git operations on the main repo)
-    current_path = os.getcwd()
+    current_path = os.path.dirname(os.path.abspath(__file__))
     for _ in range(10):
         indicators = ['package.json', 'nexus_sdk.py']
         if any(os.path.exists(os.path.join(current_path, indicator)) for indicator in indicators):
@@ -135,7 +103,8 @@ def get_project_root():
             break
         current_path = parent_path
 
-    return os.getcwd()
+    # Fallback to script directory if not found
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def get_content_root():
@@ -157,10 +126,11 @@ class NexusLogger:
 
         Args:
             agent_name: Identifier for this AI agent (appears in logs)
+            
         """
         self.agent_name = agent_name
         self.project_root = get_project_root()
-        self.content_root = get_content_root()
+        self.content_root = find_nexus_content_root()
 
         # Make content root the working directory for content operations
         self.field_notes_dir = os.path.join(self.content_root, "field-notes")
