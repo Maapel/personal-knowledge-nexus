@@ -30,6 +30,57 @@ import hashlib
 import uuid
 
 
+def find_nexus_project_root():
+    """
+    Find the Nexus project root directory by searching upwards for key files.
+
+    Returns:
+        str: Path to the Nexus project root directory
+    """
+    # Start from current directory
+    current_path = os.getcwd()
+
+    # Check up to 10 levels up
+    for _ in range(10):
+        # Look for multiple indicators of a Nexus project
+        indicators = [
+            'content',
+            'content/trails',
+            'content/field-notes',
+            'package.json',
+            'nexus_sdk.py'
+        ]
+
+        found_indicators = []
+        for indicator in indicators:
+            indicator_path = os.path.join(current_path, indicator)
+            if os.path.exists(indicator_path):
+                found_indicators.append(indicator)
+
+        # If we find multiple indicators, this is likely the right directory
+        if len(found_indicators) >= 2:
+            return current_path
+
+        # Go up one directory
+        parent_path = os.path.dirname(current_path)
+        if parent_path == current_path:  # Reached filesystem root
+            break
+        current_path = parent_path
+
+    # Fallback: return current directory and hope for the best
+    return os.getcwd()
+
+
+def ensure_in_project_root():
+    """Change to the Nexus project root directory if needed."""
+    project_root = find_nexus_project_root()
+    current_dir = os.getcwd()
+
+    if project_root != current_dir:
+        os.chdir(project_root)
+        print(f"📂 Changed to Nexus project root: {project_root}")
+
+
 class NexusLogger:
     """
     The Writer Agent - Records incidents and learnings to the knowledge base.
@@ -65,6 +116,9 @@ class NexusLogger:
         Returns:
             str: Path to the created file
         """
+        # Ensure we're operating in the correct project root
+        ensure_in_project_root()
+
         if tags is None:
             tags = []
 
@@ -114,6 +168,9 @@ class NexusLogger:
         Returns:
             str: Slug of the created trail
         """
+        # Ensure we're operating in the correct project root
+        ensure_in_project_root()
+
         # Generate slug from title
         slug = title.lower().replace(" ", "-")
         # Remove special characters, keep alphanumeric and dashes
@@ -156,10 +213,12 @@ class NexusLogger:
             status: New status ("Active", "Archived", "Mastered")
             progress: Progress percentage (0-100)
             additional_content: Content to append to the trail
-
-        Returns:
-            str: Slug of the updated trail
         """
+        # Ensure we're operating in the correct project root
+        ensure_in_project_root()
+
+        trail_path = os.path.join("content", "trails", slug, "index.mdx")
+
         trail_path = os.path.join("content", "trails", slug, "index.mdx")
 
         if not os.path.exists(trail_path):
