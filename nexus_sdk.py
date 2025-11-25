@@ -32,18 +32,24 @@ import uuid
 
 def find_nexus_content_root():
     """
-    Find the Nexus content root directory, either from NEXUS_CONTENT_PATH env var
-    or by searching for content directories up the directory tree.
+    Find the Nexus content root directory, checking in this order:
+    1. NEXUS_CONTENT_PATH environment variable
+    2. .env.local file (same as web app)
+    3. Auto-detection fallbacks
 
     Returns:
         str: Path to the Nexus content root directory
     """
-    # Check for explicit content path environment variable
-    content_path = os.getenv('NEXUS_CONTENT_PATH')
-    if content_path:
-        content_path = os.path.expanduser(content_path)
-        if os.path.exists(content_path):
-            return content_path
+    
+    # Second, check .env.local file (same as web app)
+    env_local_path = find_env_local_file()
+    if env_local_path:
+        env_vars = parse_env_file(env_local_path)
+        content_path = env_vars.get('NEXUS_CONTENT_PATH')
+        if content_path:
+            content_path = os.path.expanduser(content_path)
+            if os.path.exists(content_path):
+                return content_path
 
     # Fallback: search upwards for content directories (legacy project structure)
     current_path = os.getcwd()
@@ -81,6 +87,38 @@ def find_nexus_content_root():
     content_dir = os.path.join(os.getcwd(), 'content')
     os.makedirs(content_dir, exist_ok=True)
     return content_dir
+
+
+def find_env_local_file():
+    """Find the .env.local file by searching up the directory tree."""
+    current_path = os.getcwd()
+    for _ in range(10):
+        env_local_path = os.path.join(current_path, '.env.local')
+        if os.path.exists(env_local_path):
+            return env_local_path
+
+        parent_path = os.path.dirname(current_path)
+        if parent_path == current_path:  # Reached filesystem root
+            break
+        current_path = parent_path
+
+    return None
+
+
+def parse_env_file(env_file_path):
+    """Parse .env.local file and return environment variables."""
+    env_vars = {}
+    try:
+        with open(env_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        env_vars[key.strip()] = value.strip().strip('"').strip("'")
+    except Exception as e:
+        print(f"Warning: Could not parse .env.local file: {e}")
+    return env_vars
 
 
 def get_project_root():
@@ -449,3 +487,5 @@ class NexusBrain:
 
         except Exception as e:
             return f"❌ Unable to search for solutions: {str(e)}. Is the Nexus server running at {self.base_url}?"
+if __name__=="__main__":
+    print(find_nexus_content_root())
