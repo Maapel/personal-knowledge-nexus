@@ -3,22 +3,50 @@ import path from 'path'
 import matter from 'gray-matter'
 import { MDXContent, TrailData, FieldNoteData } from './types'
 
-// Read all trails from /content/trails
-export async function getAllTrails(): Promise<TrailData[]> {
-  const trailsDir = path.join(process.cwd(), 'content', 'trails')
+// Content repository root detection
+export function findContentRoot(): string {
+  // Check for environment variable
+  const contentPath = process.env.NEXUS_CONTENT_PATH
+  if (contentPath) {
+    return path.resolve(contentPath)
+  }
 
-  if (!fs.existsSync(trailsDir)) {
+  // Try project root + nexus-content sibling
+  const projectRoot = path.dirname(path.dirname(path.dirname(__filename)))
+  const siblingContent = path.join(projectRoot, 'nexus-content')
+  if (fs.existsSync(siblingContent)) {
+    return siblingContent
+  }
+
+  // Try legacy project content directory
+  const legacyContent = path.join(projectRoot, 'content')
+  if (fs.existsSync(legacyContent)) {
+    return legacyContent
+  }
+
+  // Fallback to project content
+  return path.join(projectRoot, 'content')
+}
+
+// Get content directories
+const CONTENT_ROOT = findContentRoot()
+const TRAILS_DIR = path.join(CONTENT_ROOT, 'trails')
+const FIELD_NOTES_DIR = path.join(CONTENT_ROOT, 'field-notes')
+
+// Read all trails from content repository
+export async function getAllTrails(): Promise<TrailData[]> {
+  if (!fs.existsSync(TRAILS_DIR)) {
     return []
   }
 
-  const trailDirs = fs.readdirSync(trailsDir, { withFileTypes: true })
+  const trailDirs = fs.readdirSync(TRAILS_DIR, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name)
 
   const trails: TrailData[] = []
 
   for (const trailName of trailDirs) {
-    const trailPath = path.join(trailsDir, trailName, 'index.mdx')
+    const trailPath = path.join(TRAILS_DIR, trailName, 'index.mdx')
 
     if (fs.existsSync(trailPath)) {
       const fileContents = fs.readFileSync(trailPath, 'utf8')
@@ -37,22 +65,20 @@ export async function getAllTrails(): Promise<TrailData[]> {
   return trails
 }
 
-// Read all field notes from /content/field-notes
+// Read all field notes from content repository
 export async function getAllFieldNotes(): Promise<FieldNoteData[]> {
-  const notesDir = path.join(process.cwd(), 'content', 'field-notes')
-
-  if (!fs.existsSync(notesDir)) {
+  if (!fs.existsSync(FIELD_NOTES_DIR)) {
     return []
   }
 
-  const noteFiles = fs.readdirSync(notesDir)
+  const noteFiles = fs.readdirSync(FIELD_NOTES_DIR)
     .filter(file => file.endsWith('.md'))
     .sort((a, b) => b.localeCompare(a)) // Sort by filename descending (newest first)
 
   const notes: FieldNoteData[] = []
 
   for (const fileName of noteFiles) {
-    const filePath = path.join(notesDir, fileName)
+    const filePath = path.join(FIELD_NOTES_DIR, fileName)
     const fileContents = fs.readFileSync(filePath, 'utf8')
     const { data } = matter(fileContents)
 
@@ -71,7 +97,7 @@ export async function getAllFieldNotes(): Promise<FieldNoteData[]> {
 
 // Read a single trail
 export async function getTrail(slug: string): Promise<MDXContent | null> {
-  const trailPath = path.join(process.cwd(), 'content', 'trails', slug, 'index.mdx')
+  const trailPath = path.join(TRAILS_DIR, slug, 'index.mdx')
 
   if (!fs.existsSync(trailPath)) {
     return null
@@ -94,7 +120,7 @@ export async function getTrail(slug: string): Promise<MDXContent | null> {
 
 // Read a single field note
 export async function getFieldNote(slug: string): Promise<MDXContent | null> {
-  const notePath = path.join(process.cwd(), 'content', 'field-notes', `${slug}.md`)
+  const notePath = path.join(FIELD_NOTES_DIR, `${slug}.md`)
 
   if (!fs.existsSync(notePath)) {
     return null

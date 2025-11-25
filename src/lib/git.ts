@@ -2,7 +2,34 @@ import simpleGit, { DefaultLogFields } from 'simple-git'
 import path from 'path'
 import { FileCommit } from './types'
 
-const git = simpleGit()
+// Content repository root detection (matching mdx.ts)
+function findContentRoot(): string {
+  // Check for environment variable
+  const contentPath = process.env.NEXUS_CONTENT_PATH
+  if (contentPath) {
+    return path.resolve(contentPath)
+  }
+
+  // Try project root + nexus-content sibling
+  const projectRoot = path.dirname(path.dirname(path.dirname(__filename)))
+  const siblingContent = path.join(projectRoot, 'nexus-content')
+  if (require('fs').existsSync(siblingContent)) {
+    return siblingContent
+  }
+
+  // Try legacy project content directory
+  const legacyContainer = path.join(projectRoot, 'content')
+  if (require('fs').existsSync(legacyContainer)) {
+    return legacyContainer
+  }
+
+  // Fallback to project content
+  return path.join(projectRoot, 'content')
+}
+
+// Initialize git instance pointing to content repository
+const CONTENT_ROOT = findContentRoot()
+const git = simpleGit(CONTENT_ROOT)
 
 export async function getFileContentAtCommit(
   slug: string,

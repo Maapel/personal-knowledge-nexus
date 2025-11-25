@@ -30,25 +30,29 @@ import hashlib
 import uuid
 
 
-def find_nexus_project_root():
+def find_nexus_content_root():
     """
-    Find the Nexus project root directory by searching upwards for key files.
+    Find the Nexus content root directory, either from NEXUS_CONTENT_PATH env var
+    or by searching for content directories up the directory tree.
 
     Returns:
-        str: Path to the Nexus project root directory
+        str: Path to the Nexus content root directory
     """
-    # Start from current directory
-    current_path = os.getcwd()
+    # Check for explicit content path environment variable
+    content_path = os.getenv('NEXUS_CONTENT_PATH')
+    if content_path:
+        content_path = os.path.expanduser(content_path)
+        if os.path.exists(content_path):
+            return content_path
 
-    # Check up to 10 levels up
+    # Fallback: search upwards for content directories (legacy project structure)
+    current_path = os.getcwd()
     for _ in range(10):
-        # Look for multiple indicators of a Nexus project
+        # Look for content indicators
         indicators = [
             'content',
             'content/trails',
-            'content/field-notes',
-            'package.json',
-            'nexus_sdk.py'
+            'content/field-notes'
         ]
 
         found_indicators = []
@@ -57,9 +61,10 @@ def find_nexus_project_root():
             if os.path.exists(indicator_path):
                 found_indicators.append(indicator)
 
-        # If we find multiple indicators, this is likely the right directory
+        # If we find content directories, this is a legacy project root
         if len(found_indicators) >= 2:
-            return current_path
+            # This will be the project root, content is in `content/` subdirectory
+            return os.path.join(current_path, 'content')
 
         # Go up one directory
         parent_path = os.path.dirname(current_path)
@@ -67,13 +72,37 @@ def find_nexus_project_root():
             break
         current_path = parent_path
 
-    # Fallback: return current directory and hope for the best
-    return os.getcwd()
+    # Fallback: try the parent directory of parent for nexus-content repos
+    parent_dir = os.path.dirname(os.path.dirname(os.getcwd()))
+    if os.path.exists(os.path.join(parent_dir, 'nexus-content')):
+        return os.path.join(parent_dir, 'nexus-content')
+
+    # Final fallback: return a content directory in current directory
+    content_dir = os.path.join(os.getcwd(), 'content')
+    os.makedirs(content_dir, exist_ok=True)
+    return content_dir
 
 
 def get_project_root():
     """Get the absolute path to the Nexus project root directory."""
-    return find_nexus_project_root()
+    # Try to find project root (for git operations on the main repo)
+    current_path = os.getcwd()
+    for _ in range(10):
+        indicators = ['package.json', 'nexus_sdk.py']
+        if any(os.path.exists(os.path.join(current_path, indicator)) for indicator in indicators):
+            return current_path
+
+        parent_path = os.path.dirname(current_path)
+        if parent_path == current_path:
+            break
+        current_path = parent_path
+
+    return os.getcwd()
+
+
+def get_content_root():
+    """Get the absolute path to the Nexus content root directory."""
+    return find_nexus_content_root()
 
 
 class NexusLogger:
@@ -93,16 +122,20 @@ class NexusLogger:
         """
         self.agent_name = agent_name
         self.project_root = get_project_root()
-        self.field_notes_dir = os.path.join(self.project_root, "content", "field-notes")
-        self.trails_dir = os.path.join(self.project_root, "content", "trails")
+        self.content_root = get_content_root()
+
+        # Make content root the working directory for content operations
+        self.field_notes_dir = os.path.join(self.content_root, "field-notes")
+        self.trails_dir = os.path.join(self.content_root, "trails")
 
         # Ensure directories exist
         os.makedirs(self.field_notes_dir, exist_ok=True)
+        os.makedirs(self.trails_dir, exist_ok=True)
 
-    def _run_git_command(self, args: list, cwd: str = None) -> None:
-        """Run a git command in the project root directory."""
+    def _run_git_command(self, args: list) -> None:
+        """Run a git command in the content root directory."""
         full_args = ['git'] + args
-        result = subprocess.run(full_args, cwd=self.project_root, capture_output=True, text=True)
+        result = subprocess.run(full_args, cwd=self.content_root, capture_output=True, text=True)
         return result
 
     def log(self, title: str, content: str, status: str = "success",
