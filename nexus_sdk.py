@@ -71,14 +71,9 @@ def find_nexus_project_root():
     return os.getcwd()
 
 
-def ensure_in_project_root():
-    """Change to the Nexus project root directory if needed."""
-    project_root = find_nexus_project_root()
-    current_dir = os.getcwd()
-
-    if project_root != current_dir:
-        os.chdir(project_root)
-        print(f"📂 Changed to Nexus project root: {project_root}")
+def get_project_root():
+    """Get the absolute path to the Nexus project root directory."""
+    return find_nexus_project_root()
 
 
 class NexusLogger:
@@ -97,10 +92,18 @@ class NexusLogger:
             agent_name: Identifier for this AI agent (appears in logs)
         """
         self.agent_name = agent_name
-        self.field_notes_dir = "content/field-notes"
+        self.project_root = get_project_root()
+        self.field_notes_dir = os.path.join(self.project_root, "content", "field-notes")
+        self.trails_dir = os.path.join(self.project_root, "content", "trails")
 
-        # Ensure field-notes directory exists
+        # Ensure directories exist
         os.makedirs(self.field_notes_dir, exist_ok=True)
+
+    def _run_git_command(self, args: list, cwd: str = None) -> None:
+        """Run a git command in the project root directory."""
+        full_args = ['git'] + args
+        result = subprocess.run(full_args, cwd=self.project_root, capture_output=True, text=True)
+        return result
 
     def log(self, title: str, content: str, status: str = "success",
             tags: List[str] = None) -> str:
@@ -116,8 +119,6 @@ class NexusLogger:
         Returns:
             str: Path to the created file
         """
-        # Ensure we're operating in the correct project root
-        ensure_in_project_root()
 
         if tags is None:
             tags = []
@@ -168,15 +169,12 @@ class NexusLogger:
         Returns:
             str: Slug of the created trail
         """
-        # Ensure we're operating in the correct project root
-        ensure_in_project_root()
-
         # Generate slug from title
         slug = title.lower().replace(" ", "-")
         # Remove special characters, keep alphanumeric and dashes
         slug = "".join([c for c in slug if c.isalnum() or c == "-"])
 
-        trail_path = os.path.join("content", "trails", slug)
+        trail_path = os.path.join(self.trails_dir, slug)
         os.makedirs(trail_path, exist_ok=True)
 
         file_path = os.path.join(trail_path, "index.mdx")
@@ -214,12 +212,7 @@ class NexusLogger:
             progress: Progress percentage (0-100)
             additional_content: Content to append to the trail
         """
-        # Ensure we're operating in the correct project root
-        ensure_in_project_root()
-
-        trail_path = os.path.join("content", "trails", slug, "index.mdx")
-
-        trail_path = os.path.join("content", "trails", slug, "index.mdx")
+        trail_path = os.path.join(self.trails_dir, slug, "index.mdx")
 
         if not os.path.exists(trail_path):
             raise FileNotFoundError(f"Trail {slug} not found")
@@ -234,7 +227,6 @@ class NexusLogger:
             raise ValueError("Invalid trail file format")
 
         # Update frontmatter
-        import yaml
         frontmatter = yaml.safe_load(parts[1]) or {}
 
         if title is not None:
@@ -268,13 +260,11 @@ class NexusLogger:
         """Auto-commit the new trail to git."""
         try:
             # Add the trail directory
-            subprocess.run(['git', 'add', f'content/trails/{slug}'],
-                         capture_output=True, check=True)
+            self._run_git_command(['add', f'content/trails/{slug}'])
 
             # Commit with meaningful message
             commit_msg = f"Created trail: {title}"
-            subprocess.run(['git', 'commit', '-m', commit_msg],
-                         capture_output=True, check=True)
+            self._run_git_command(['commit', '-m', commit_msg])
 
             print(f"✅ Committed trail to git: {commit_msg}")
 
@@ -287,13 +277,11 @@ class NexusLogger:
         """Auto-commit the new field note to git."""
         try:
             # Add the file
-            subprocess.run(['git', 'add', f'content/field-notes/{filename}'],
-                         capture_output=True, check=True)
+            self._run_git_command(['add', f'content/field-notes/{filename}'])
 
             # Commit with meaningful message
             commit_msg = f"Nexus Log: {title}"
-            subprocess.run(['git', 'commit', '-m', commit_msg],
-                         capture_output=True, check=True)
+            self._run_git_command(['commit', '-m', commit_msg])
 
             print(f"✅ Committed to git: {commit_msg}")
 
