@@ -47,6 +47,20 @@ Examples:
     brain_parser = subparsers.add_parser('brain', help='Ask AI-powered questions about your knowledge')
     brain_parser.add_argument('question', help='Your question about the knowledge base')
 
+    # New Trail command
+    new_parser = subparsers.add_parser('new', help='Create a new Project Trail')
+    new_parser.add_argument('name', help='Name of the project')
+    new_parser.add_argument('--desc', default='No description', help='Project description')
+
+    # Update Trail command
+    update_parser = subparsers.add_parser('update', help='Update an existing Project Trail')
+    update_parser.add_argument('slug', help='Slug of the trail to update')
+    update_parser.add_argument('--title', help='New title')
+    update_parser.add_argument('--desc', help='New description')
+    update_parser.add_argument('--status', choices=['Active', 'Archived', 'Mastered'], help='New status')
+    update_parser.add_argument('--progress', type=int, choices=range(101), help='Progress percentage (0-100)')
+    update_parser.add_argument('--content', help='Additional content to append')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -88,6 +102,18 @@ Examples:
             except Exception as e:
                 print(f"❌ Error connecting to Nexus: {e}")
                 print("💡 Make sure the Nexus server is running with 'npm run dev'")
+
+        elif args.command == 'new':
+            logger = NexusLogger()
+            slug = logger.create_trail(args.name, args.desc)
+            print(f"✅ Created new project trail: {args.name}")
+            print(f"📂 Location: content/trails/{slug}/index.mdx")
+            print(f"💡 To log to this project, use: nexus log '...message...' --tags {slug}")
+
+        elif args.command == 'update':
+            logger = NexusLogger()
+            logger.update_trail(args.slug, args.title, args.desc, args.status, args.progress, args.content)
+            print(f"✅ Updated project trail: {args.slug}")
 
     except KeyboardInterrupt:
         print("\n⚡ Nexus CLI interrupted")

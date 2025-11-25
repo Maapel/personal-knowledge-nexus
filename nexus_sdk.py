@@ -102,6 +102,128 @@ class NexusLogger:
         print(f"✅ Logged incident: {title}")
         return filepath
 
+    def create_trail(self, title: str, description: str, status: str = "Active") -> str:
+        """
+        Creates a new Project Trail directory and index file.
+
+        Args:
+            title: Title of the new project trail
+            description: Description of the project
+            status: Initial status ("Active", "Archived", "Mastered")
+
+        Returns:
+            str: Slug of the created trail
+        """
+        # Generate slug from title
+        slug = title.lower().replace(" ", "-")
+        # Remove special characters, keep alphanumeric and dashes
+        slug = "".join([c for c in slug if c.isalnum() or c == "-"])
+
+        trail_path = os.path.join("content", "trails", slug)
+        os.makedirs(trail_path, exist_ok=True)
+
+        file_path = os.path.join(trail_path, "index.mdx")
+
+        frontmatter = {
+            "title": title,
+            "description": description,
+            "status": status,
+            "progress": 0,
+            "slug": slug,
+            "tags": [slug]  # Auto-tag the project with its own slug
+        }
+
+        with open(file_path, "w", encoding='utf-8') as f:
+            f.write("---\n")
+            yaml.dump(frontmatter, f, default_flow_style=False)
+            f.write("---\n\n")
+            f.write(f"# {title}\n\nProject started on {datetime.date.today()}.\n")
+
+        # Auto-commit to git
+        self._auto_commit_trail(slug, title)
+        return slug
+
+    def update_trail(self, slug: str, title: Optional[str] = None,
+                     description: Optional[str] = None, status: Optional[str] = None,
+                     progress: Optional[int] = None, additional_content: Optional[str] = None) -> str:
+        """
+        Updates an existing knowledge trail.
+
+        Args:
+            slug: Slug of the trail to update
+            title: New title
+            description: New description
+            status: New status ("Active", "Archived", "Mastered")
+            progress: Progress percentage (0-100)
+            additional_content: Content to append to the trail
+
+        Returns:
+            str: Slug of the updated trail
+        """
+        trail_path = os.path.join("content", "trails", slug, "index.mdx")
+
+        if not os.path.exists(trail_path):
+            raise FileNotFoundError(f"Trail {slug} not found")
+
+        # Read existing content
+        with open(trail_path, "r", encoding='utf-8') as f:
+            existing_content = f.read()
+
+        # Parse frontmatter
+        parts = existing_content.split('---\n', 2)
+        if len(parts) < 3:
+            raise ValueError("Invalid trail file format")
+
+        # Update frontmatter
+        import yaml
+        frontmatter = yaml.safe_load(parts[1]) or {}
+
+        if title is not None:
+            frontmatter['title'] = title
+        if description is not None:
+            frontmatter['description'] = description
+        if status is not None:
+            frontmatter['status'] = status
+        if progress is not None:
+            frontmatter['progress'] = progress
+
+        # Handle additional content
+        content_body = parts[2].strip()
+        if additional_content:
+            # Append to existing content with timestamp
+            current_date = datetime.date.today().strftime("%Y-%m-%d")
+            content_body += f"\n\n## Update ({current_date})\n\n{additional_content}"
+
+        # Write updated file
+        with open(trail_path, "w", encoding='utf-8') as f:
+            f.write("---\n")
+            yaml.dump(frontmatter, f, default_flow_style=False)
+            f.write("---\n\n")
+            f.write(content_body)
+
+        # Auto-commit update
+        self._auto_commit_trail(slug, f"Updated trail: {frontmatter.get('title', slug)}")
+        return slug
+
+    def _auto_commit_trail(self, slug: str, title: str) -> None:
+        """Auto-commit the new trail to git."""
+        try:
+            # Add the trail directory
+            subprocess.run(['git', 'add', f'content/trails/{slug}'],
+                         capture_output=True, check=True)
+
+            # Commit with meaningful message
+            commit_msg = f"Created trail: {title}"
+            subprocess.run(['git', 'commit', '-m', commit_msg],
+                         capture_output=True, check=True)
+
+            print(f"✅ Committed trail to git: {commit_msg}")
+
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Git commit failed (trail still created): {e}")
+        except FileNotFoundError:
+            print("⚠️ Git not found - trail created but not committed")
+
     def _auto_commit(self, filename: str, title: str) -> None:
         """Auto-commit the new field note to git."""
         try:

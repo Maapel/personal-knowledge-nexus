@@ -35,6 +35,35 @@ def log_work(title: str, description: str, status: str = "success") -> str:
     result = logger.log(title, description, status, tags)
     return f"Logged to Nexus: {result}"
 
+@mcp.tool()
+def create_trail(title: str, description: str, status: str = "Active") -> str:
+    """
+    Create a new Project Trail directory and index file.
+
+    Use this when starting a new project to establish its knowledge trail
+    and automatically enable organized logging for that project.
+    """
+    try:
+        slug = logger.create_trail(title, description, status)
+        return f"Created new project trail: {title} (slug: {slug})"
+    except Exception as e:
+        return f"Failed to create trail: {str(e)}"
+
+@mcp.tool()
+def update_trail(slug: str, title: str = None, description: str = None, status: str = None,
+                 progress: int = None, additional_content: str = None) -> str:
+    """
+    Update an existing Project Trail.
+
+    Use this to change trail metadata, update progress, or append new content to project documentation.
+    All parameters are optional - only the slug is required.
+    """
+    try:
+        updated_slug = logger.update_trail(slug, title, description, status, progress, additional_content)
+        return f"Updated project trail: {slug}"
+    except Exception as e:
+        return f"Failed to update trail: {str(e)}"
+
 @mcp.resource("nexus://recent")
 def get_recent_logs() -> str:
     """Get the text content of the 5 most recent logs."""
