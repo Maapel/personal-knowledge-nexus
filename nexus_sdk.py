@@ -352,55 +352,47 @@ class NexusBrain:
 
     def recall(self, query: str, limit: int = 3) -> str:
         """
-        Search the knowledge base for relevant historical information.
+        Ask the knowledge base for AI-powered contextual answers about past solutions, logs, or trails.
 
         Args:
-            query: Search terms (e.g., "authentication failures", "optimization success")
-            limit: Maximum number of results to return
+            query: Search question (e.g., "authentication failures", "optimization success")
+            limit: Maximum number of results to analyze (for AI context)
 
         Returns:
-            str: Formatted string containing relevant historical information
+            str: AI-powered contextual answer with source references
         """
         try:
-            # Build request with properly encoded URL
-            encoded_query = quote(query)
-            req = Request(f"{self.search_url}?q={encoded_query}",
-                         headers={'User-Agent': 'NexusBrain/1.0'})
+            # Use AI-powered ask endpoint instead of raw search
+            ask_url = f"{self.base_url}/api/ask"
+            ask_data = json.dumps({"query": query}).encode('utf-8')
+            req = Request(ask_url,
+                         data=ask_data,
+                         headers={
+                             'Content-Type': 'application/json',
+                             'User-Agent': 'NexusBrain/1.0'
+                         })
 
             # Make API call with timeout
-            with urlopen(req, timeout=5) as response:
+            with urlopen(req, timeout=10) as response:
                 data = json.loads(response.read().decode('utf-8'))
 
-            results = data.get('results', [])[:limit]
+            # Format the AI response
+            answer = data.get('answer', 'No answer provided')
+            sources = data.get('sources', [])
+            simulated = data.get('simulated', False)
 
-            if not results:
-                return f"No historical information found for: '{query}'"
+            # Build response
+            formatted_response = f"🤖 Nexus Recall: {answer}"
 
-            # Format results for AI consumption
-            formatted_results = []
-            for result in results:
-                result_type = "📖 Trail" if result['type'] == 'trail' else "📝 Incident"
-                status_emoji = {
-                    'success': '✅',
-                    'failure': '❌',
-                    'warning': '⚠️',
-                    'info': 'ℹ️'
-                }.get(result.get('status', ''), '📝')
+            if simulated:
+                formatted_response += "\n\n⚠️ This is a simulated response. Add OPENAI_API_KEY for full AI-powered answers."
 
-                formatted = (
-                    f"{result_type} {status_emoji} **{result['title']}**\n"
-                    f"Status: {result.get('status', 'unknown')}\n"
-                    f"Content: {result['snippet']}\n"
-                    f"Slug: {result['slug']}\n"
-                )
-                formatted_results.append(formatted)
+            if sources:
+                formatted_response += "\n\n📚 Sources:"
+                for source in sources:
+                    formatted_response += f"\n• {source['title']} ({source['type']})"
 
-            summary = (
-                f"🤖 Nexus Recall: Found {len(results)} relevant historical items for '{query}'\n\n"
-                f"{chr(10).join(formatted_results)}"
-            )
-
-            return summary
+            return formatted_response
 
         except Exception as e:
             return f"❌ Unable to query knowledge base: {str(e)}. Is the Nexus server running at {self.base_url}?"

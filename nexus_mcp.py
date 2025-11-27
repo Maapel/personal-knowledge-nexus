@@ -13,14 +13,14 @@ from nexus_sdk import NexusBrain, NexusLogger
 mcp = FastMCP("Nexus Knowledge Base")
 
 # Initialize Nexus Tools
-brain = NexusBrain()
+brain = NexusBrain(base_url="http://localhost:3000")
 logger = NexusLogger(agent_name="MCP-Agent")
 
 @mcp.tool()
 def recall_knowledge(query: str) -> str:
     """
-    Search the Personal Knowledge Nexus for past solutions, logs, or trails.
-    Use this BEFORE writing code to check if a problem has been solved before.
+    Ask the Personal Knowledge Nexus for contextual answers about past solutions, logs, or trails.
+    Use this BEFORE writing code to get AI-powered insights from your knowledge base.
     """
     return brain.recall(query)
 
