@@ -31,3 +31,14 @@ export interface MDXContent {
   content: string
   slug: string
 }
+
+export interface TrailAttachment {
+  filename: string
+  description: string
+  url: string
+}
+
+export interface TrailAttachments {
+  slug: string
+  attachments: TrailAttachment[]
+}

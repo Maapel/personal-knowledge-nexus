@@ -1,9 +1,13 @@
+'use client'
+
 import { getAllTrails } from '@/lib/mdx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen, Archive, Trophy, Target, Plus, Map } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { BookOpen, Archive, Trophy, Target, Plus, Map, FileCode, Lightbulb, Briefcase, Book } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
 
 const statusIcons = {
   Active: Target,
@@ -47,6 +51,7 @@ export default async function TrailsPage() {
             <span className="text-muted-foreground">Create new trails with:</span>
             <code className="font-mono ml-2 bg-background px-2 py-1 rounded">nexus new "Your Project"</code>
           </div>
+          <TemplateSelector />
         </div>
       </div>
 
@@ -194,6 +199,105 @@ export default async function TrailsPage() {
           Use the CLI tools to create and update your project documentation.
         </p>
       </div>
+    </div>
+  )
+}
+
+// Template Selector Component
+function TemplateSelector() {
+  const [showTemplates, setShowTemplates] = useState(false)
+
+  const templates = [
+    {
+      name: 'project',
+      title: 'Development Project',
+      description: 'Software project with phases, metrics, and technical architecture',
+      icon: Briefcase,
+      color: 'text-blue-500'
+    },
+    {
+      name: 'research',
+      title: 'Research Study',
+      description: 'Academic or technical research with methodology and findings',
+      icon: Lightbulb,
+      color: 'text-green-500'
+    },
+    {
+      name: 'tutorial',
+      title: 'Learning Tutorial',
+      description: 'Step-by-step guide with examples and troubleshooting',
+      icon: Book,
+      color: 'text-purple-500'
+    },
+    {
+      name: 'documentation',
+      title: 'Technical Reference',
+      description: 'API docs, guides, and technical specifications',
+      icon: FileCode,
+      color: 'text-orange-500'
+    }
+  ]
+
+  const handleTemplateSelect = async (templateName: string) => {
+    const title = prompt(`Enter title for ${templateName} trail:`)
+    if (!title) return
+
+    const description = prompt('Enter description:', `A comprehensive ${templateName} knowledge trail`)
+    if (!description) return
+
+    const tags = prompt('Enter tags (comma-separated, optional):', templateName)
+    const tagsString = tags ? ` --tags "${tags}"` : ''
+
+    // Use the terminal command style
+    const command = `nexus new "${title}" --desc "${description}" --template ${templateName}${tagsString}`
+
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(command)
+      alert(`Command copied to clipboard:\n${command}\n\nRun this in your terminal to create the trail.`)
+    } catch (err) {
+      alert(`Run this command in your terminal:\n${command}`)
+    }
+
+    setShowTemplates(false)
+  }
+
+  return (
+    <div className="relative">
+      <Button
+        onClick={() => setShowTemplates(!showTemplates)}
+        variant="default"
+        className="flex items-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        Create with Template
+      </Button>
+
+      {showTemplates && (
+        <div className="absolute top-full mt-2 w-80 bg-card border border-border rounded-lg shadow-lg p-4 z-10">
+          <h3 className="font-medium mb-3">Choose a Template</h3>
+          <div className="space-y-2">
+            {templates.map((template) => {
+              const Icon = template.icon
+              return (
+                <button
+                  key={template.name}
+                  onClick={() => handleTemplateSelect(template.name)}
+                  className="w-full p-3 border border-border rounded-lg hover:bg-secondary/20 text-left transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <Icon className={`w-5 h-5 mt-0.5 ${template.color}`} />
+                    <div>
+                      <div className="font-medium text-sm">{template.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{template.description}</div>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

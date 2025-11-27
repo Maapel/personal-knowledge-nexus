@@ -1,11 +1,11 @@
 'use client'
 
-import { FileCommit } from '@/lib/types'
+import { FileCommit, TrailAttachments, TrailAttachment } from '@/lib/types'
 import { useState, useEffect, useMemo } from 'react'
 import ReactMarkdown, { Components } from 'react-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Calendar, GitBranch, User, RotateCcw, History } from 'lucide-react'
+import { ArrowLeft, Calendar, GitBranch, User, RotateCcw, History, Paperclip, Download, FileText, Image, Code, Archive } from 'lucide-react'
 import Link from 'next/link'
 
 interface SerializedContent {
@@ -16,6 +16,7 @@ interface SerializedContent {
 export default function TrailPage({ params }: { params: { slug: string } }) {
   const [trail, setTrail] = useState<any>(null)
   const [history, setHistory] = useState<FileCommit[]>([])
+  const [attachments, setAttachments] = useState<TrailAttachment[]>([])
   const [currentContent, setCurrentContent] = useState<string>('')
   const [originalContent, setOriginalContent] = useState<string>('')
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
@@ -97,6 +98,13 @@ export default function TrailPage({ params }: { params: { slug: string } }) {
         if (historyRes.ok) {
           const historyData = await historyRes.json()
           setHistory(historyData)
+        }
+
+        // Fetch attachments
+        const attachmentsRes = await fetch(`${window.location.origin}/api/trails/${params.slug}/attachments`)
+        if (attachmentsRes.ok) {
+          const attachmentsData: TrailAttachments = await attachmentsRes.json()
+          setAttachments(attachmentsData.attachments || [])
         }
       } catch (error) {
         console.error('Error loading data:', error)
@@ -209,6 +217,68 @@ export default function TrailPage({ params }: { params: { slug: string } }) {
             {currentContent}
           </ReactMarkdown>
         </div>
+
+        {/* Attachments Section */}
+        {attachments.length > 0 && (
+          <div className="mt-16 border-t border-border pt-12">
+            <div className="flex items-center gap-2 mb-8">
+              <Paperclip className="w-6 h-6" />
+              <h2 className="text-2xl font-bold text-foreground">Attachments</h2>
+              <Badge variant="secondary" className="ml-2">
+                {attachments.length}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {attachments.map((attachment) => {
+                // Determine file type icon
+                const getIcon = () => {
+                  const ext = attachment.filename.split('.').pop()?.toLowerCase()
+                  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext || '')) {
+                    return <Image className="w-5 h-5" />
+                  } else if (['pdf', 'txt', 'md'].includes(ext || '')) {
+                    return <FileText className="w-5 h-5" />
+                  } else if (['zip', 'tar', 'gz'].includes(ext || '')) {
+                    return <Archive className="w-5 h-5" />
+                  } else if (['js', 'ts', 'py', 'java', 'cpp', 'c', 'cs'].includes(ext || '')) {
+                    return <Code className="w-5 h-5" />
+                  } else {
+                    return <FileText className="w-5 h-5" />
+                  }
+                }
+
+                return (
+                  <a
+                    key={attachment.filename}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-secondary/20 transition-colors group"
+                  >
+                    <div className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                      {getIcon()}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground truncate">
+                        {attachment.filename}
+                      </div>
+                      {attachment.description && (
+                        <div className="text-sm text-muted-foreground truncate">
+                          {attachment.description}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                      <Download className="w-4 h-4" />
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Changelog Section */}
         {history.length > 0 && (
