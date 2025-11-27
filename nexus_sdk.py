@@ -198,7 +198,8 @@ class NexusLogger:
         print(f"✅ Logged incident: {title}")
         return filepath
 
-    def create_trail(self, title: str, description: str, status: str = "Active") -> str:
+    def create_trail(self, title: str, description: str, status: str = "Active",
+                     image_url: Optional[str] = None, tags: List[str] = None) -> str:
         """
         Creates a new Project Trail directory and index file.
 
@@ -206,10 +207,15 @@ class NexusLogger:
             title: Title of the new project trail
             description: Description of the project
             status: Initial status ("Active", "Archived", "Mastered")
+            image_url: Optional URL or local path to an image file for the trail header
+            tags: Optional list of tags for the trail
 
         Returns:
             str: Slug of the created trail
         """
+        if tags is None:
+            tags = []
+
         # Generate slug from title
         slug = title.lower().replace(" ", "-")
         # Remove special characters, keep alphanumeric and dashes
@@ -217,6 +223,14 @@ class NexusLogger:
 
         trail_path = os.path.join(self.trails_dir, slug)
         os.makedirs(trail_path, exist_ok=True)
+
+        # Handle image attachment
+        image_filename = None
+        if image_url:
+            try:
+                image_filename = self._download_and_save_image(image_url, trail_path, slug)
+            except Exception as e:
+                print(f"⚠️ Failed to attach image: {e}")
 
         file_path = os.path.join(trail_path, "index.mdx")
 
@@ -226,8 +240,12 @@ class NexusLogger:
             "status": status,
             "progress": 0,
             "slug": slug,
-            "tags": [slug]  # Auto-tag the project with its own slug
+            "tags": [slug] + tags  # Auto-tag with slug plus additional tags
         }
+
+        # Add image to frontmatter if successfully downloaded
+        if image_filename:
+            frontmatter["image"] = image_filename
 
         with open(file_path, "w", encoding='utf-8') as f:
             f.write("---\n")
@@ -241,7 +259,8 @@ class NexusLogger:
 
     def update_trail(self, slug: str, title: Optional[str] = None,
                      description: Optional[str] = None, status: Optional[str] = None,
-                     progress: Optional[int] = None, additional_content: Optional[str] = None) -> str:
+                     progress: Optional[int] = None, additional_content: Optional[str] = None,
+                     image_url: Optional[str] = None) -> str:
         """
         Updates an existing knowledge trail.
 
@@ -252,8 +271,10 @@ class NexusLogger:
             status: New status ("Active", "Archived", "Mastered")
             progress: Progress percentage (0-100)
             additional_content: Content to append to the trail
+            image_url: Optional URL or local path to an image file for the trail header
         """
         trail_path = os.path.join(self.trails_dir, slug, "index.mdx")
+        trail_dir = os.path.join(self.trails_dir, slug)
 
         if not os.path.exists(trail_path):
             raise FileNotFoundError(f"Trail {slug} not found")
@@ -279,6 +300,16 @@ class NexusLogger:
         if progress is not None:
             frontmatter['progress'] = progress
 
+        # Handle image attachment
+        if image_url is not None:
+            try:
+                image_filename = self._download_and_save_image(image_url, trail_dir, slug)
+                if image_filename:
+                    frontmatter['image'] = image_filename
+                    print(f"✅ Image updated for trail: {slug}")
+            except Exception as e:
+                print(f"⚠️ Failed to attach image to trail: {e}")
+
         # Handle additional content
         content_body = parts[2].strip()
         if additional_content:
@@ -296,6 +327,73 @@ class NexusLogger:
         # Auto-commit update
         self._auto_commit_trail(slug, f"Updated trail: {frontmatter.get('title', slug)}")
         return slug
+
+    def _download_and_save_image(self, image_url: str, trail_path: str, slug: str) -> str:
+        """
+        Download an image from URL or copy from local path and save to trail directory.
+
+        Args:
+            image_url: URL or local file path to the image
+            trail_path: Path to the trail directory
+            slug: Trail slug for generating filename
+
+        Returns:
+            str: Relative filename of the saved image
+        """
+        try:
+            # Determine if it's a URL or local file
+            if image_url.startswith('http://') or image_url.startswith('https://'):
+                # URL - download it
+                req = Request(image_url, headers={'User-Agent': 'NexusLogger/1.0'})
+
+                with urlopen(req, timeout=30) as response:
+                    image_data = response.read()
+
+                # Get file extension from Content-Type header or URL
+                content_type = response.headers.get('Content-Type', '')
+                if 'png' in content_type:
+                    ext = 'png'
+                elif 'jpg' in content_type or 'jpeg' in content_type:
+                    ext = 'jpg'
+                elif 'gif' in content_type:
+                    ext = 'gif'
+                elif 'webp' in content_type:
+                    ext = 'webp'
+                elif 'svg' in content_type:
+                    ext = 'svg'
+                else:
+                    # Try to get extension from URL
+                    import mimetypes
+                    ext = mimetypes.guess_extension(content_type) or 'png'
+                    ext = ext.lstrip('.')
+
+            else:
+                # Local file path
+                if not os.path.exists(image_url):
+                    raise FileNotFoundError(f"Local image file not found: {image_url}")
+
+                # Read local file
+                with open(image_url, 'rb') as f:
+                    image_data = f.read()
+
+                # Get extension from filename
+                _, ext = os.path.splitext(image_url)
+                ext = ext.lstrip('.').lower() or 'png'
+
+            # Generate filename
+            image_filename = f"{slug}-hero.{ext}"
+
+            # Save to trail directory
+            image_path = os.path.join(trail_path, image_filename)
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+
+            print(f"✅ Image attached to trail: {image_filename}")
+            return image_filename
+
+        except Exception as e:
+            print(f"❌ Failed to download/save image: {e}")
+            raise
 
     def _auto_commit_trail(self, slug: str, title: str) -> None:
         """Auto-commit the new trail to git."""

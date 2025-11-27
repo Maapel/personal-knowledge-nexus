@@ -36,16 +36,35 @@ def log_work(title: str, description: str, status: str = "success") -> str:
     return f"Logged to Nexus: {result}"
 
 @mcp.tool()
-def create_trail(title: str, description: str, status: str = "Active") -> str:
+def create_trail(title: str, description: str, status: str = "Active", image_url: str = None, tags: str = None) -> str:
     """
-    Create a new Project Trail directory and index file.
+    Create a new Project Trail directory and index file with optional image attachment.
 
     Use this when starting a new project to establish its knowledge trail
     and automatically enable organized logging for that project.
+
+    Args:
+        title: Title of the new project trail
+        description: Description of the project
+        status: Initial status ("Active", "Archived", "Mastered")
+        image_url: Optional URL or local path to an image file for the trail header
+        tags: Optional comma-separated list of tags for the trail
     """
     try:
-        slug = logger.create_trail(title, description, status)
-        return f"Created new project trail: {title} (slug: {slug})"
+        # Parse tags if provided
+        tag_list = None
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
+
+        slug = logger.create_trail(title, description, status, image_url, tag_list)
+
+        response = f"Created new project trail: {title} (slug: {slug})"
+        if image_url:
+            response += f"\n📸 Header image attached from: {image_url}"
+        if tag_list:
+            response += f"\n🏷️ Tagged with: {', '.join(tag_list)}"
+
+        return response
     except Exception as e:
         return f"Failed to create trail: {str(e)}"
 
