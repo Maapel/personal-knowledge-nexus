@@ -328,6 +328,87 @@ class NexusLogger:
         self._auto_commit_trail(slug, f"Updated trail: {frontmatter.get('title', slug)}")
         return slug
 
+    def create_trail_group(self, title: str, description: str, template_name: str,
+                          template_content: str, status: str = "Active", progress: int = 0,
+                          tags: List[str] = None) -> str:
+        """
+        Create trail with predefined template content (used by MCP templates).
+        """
+        if tags is None:
+            tags = []
+
+        # Generate slug from title
+        slug = title.lower().replace(" ", "-")
+        slug = "".join([c for c in slug if c.isalnum() or c == "-"])
+
+        trail_path = os.path.join(self.trails_dir, slug)
+        os.makedirs(trail_path, exist_ok=True)
+
+        file_path = os.path.join(trail_path, "index.mdx")
+
+        frontmatter = {
+            "title": title,
+            "description": description,
+            "status": status,
+            "progress": progress,
+            "slug": slug,
+            "tags": tags + [slug, template_name],  # Auto-tag with template type
+            "template": template_name  # Track template origin
+        }
+
+        with open(file_path, "w", encoding='utf-8') as f:
+            f.write("---\n")
+            yaml.dump(frontmatter, f, default_flow_style=False)
+            f.write("---\n\n")
+            f.write(template_content)
+
+        # Auto-commit to git
+        self._auto_commit_trail(slug, f"Created {template_name} trail: {title}")
+        return slug
+
+    def update_trail_content(self, slug: str, new_content: str, additional_frontmatter: Dict[str, Any] = None) -> str:
+        """
+        Replace entire trail content while preserving frontmatter (used by MCP direct uploads).
+        """
+        trail_path = os.path.join(self.trails_dir, slug, "index.mdx")
+
+        if not os.path.exists(trail_path):
+            raise FileNotFoundError(f"Trail {slug} not found")
+
+        # Read existing content
+        with open(trail_path, "r", encoding='utf-8') as f:
+            existing_content = f.read()
+
+        # Preserve existing frontmatter
+        parts = existing_content.split('---\n', 2)
+        if len(parts) >= 2:
+            try:
+                frontmatter = yaml.safe_load(parts[1]) or {}
+            except yaml.YAMLError:
+                frontmatter = {}
+        else:
+            frontmatter = {}
+
+        # Update frontmatter with any provided updates
+        if additional_frontmatter:
+            frontmatter.update(additional_frontmatter)
+            # Always ensure required fields
+            frontmatter.setdefault('title', slug)
+            frontmatter.setdefault('description', '')
+            frontmatter.setdefault('status', 'Active')
+            frontmatter.setdefault('progress', 0)
+
+        # Write new content
+        with open(trail_path, "w", encoding='utf-8') as f:
+            f.write("---\n")
+            yaml.dump(frontmatter, f, default_flow_style=False)
+            f.write("---\n\n")
+            f.write(new_content)
+
+        # Auto-commit update
+        self._auto_commit_trail(slug, f"Content updated: {frontmatter.get('title', slug)}")
+        return slug
+
     def _download_and_save_image(self, image_url: str, trail_path: str, slug: str) -> str:
         """
         Download an image from URL or copy from local path and save to trail directory.
