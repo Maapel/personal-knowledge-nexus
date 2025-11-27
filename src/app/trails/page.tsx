@@ -125,16 +125,40 @@ export default async function TrailsPage() {
 
               return (
                 <Link href={`/trails/${trail.slug}`} key={trail.slug}>
-                  <Card className="glass hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105 h-full">
+                  <Card className="glass hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-105 h-full overflow-hidden">
+                    {/* Trail Image */}
+                    {trail.image && (
+                      <div className="relative h-48 overflow-hidden bg-secondary/20">
+                        <img
+                          src={`/content/trails/${trail.slug}/${trail.image}`}
+                          alt={trail.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <Badge className={`${statusColor} text-white flex items-center gap-1`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {trail.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-2">
-                          {trail.title}
-                        </CardTitle>
-                        <Badge className={`${statusColor} text-white flex items-center gap-1`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {trail.status}
-                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-2">
+                            {trail.title}
+                          </CardTitle>
+                          {!trail.image && (
+                            <div className="flex justify-end mb-3">
+                              <Badge className={`${statusColor} text-white flex items-center gap-1`}>
+                                <StatusIcon className="w-3 h-3" />
+                                {trail.status}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <CardDescription className="text-muted-foreground line-clamp-3">
                         {trail.description}

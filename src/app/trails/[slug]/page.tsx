@@ -1,50 +1,12 @@
 'use client'
 
 import { FileCommit } from '@/lib/types'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import ReactMarkdown, { Components } from 'react-markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Calendar, GitBranch, User, RotateCcw, History } from 'lucide-react'
 import Link from 'next/link'
-
-const markdownComponents: Components = {
-  h1: ({ children }) => <h1 className="text-3xl font-bold mb-4 mt-8 scroll-m-20">{children}</h1>,
-  h2: ({ children }) => <h2 className="text-2xl font-bold mb-3 mt-6 scroll-m-20">{children}</h2>,
-  h3: ({ children }) => <h3 className="text-xl font-semibold mb-2 mt-4">{children}</h3>,
-  h4: ({ children }) => <h4 className="text-lg font-medium mb-2 mt-4">{children}</h4>,
-  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
-  ul: ({ children }) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
-  ol: ({ children }) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
-  li: ({ children }) => <li className="mb-1">{children}</li>,
-  code: ({ className, children }) => {
-    const isInline = !className?.includes('language-')
-    return (
-      <code className={`font-mono text-sm ${
-        isInline
-          ? 'bg-secondary/50 px-1.5 py-0.5 rounded text-primary'
-          : 'font-mono'
-      }`}>
-        {children}
-      </code>
-    )
-  },
-  pre: ({ children }) => (
-    <pre className="bg-secondary/50 border border-border rounded-lg p-4 mb-4 overflow-x-auto">
-      {children}
-    </pre>
-  ),
-  blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
-      {children}
-    </blockquote>
-  ),
-  a: ({ children, href }) => (
-    <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  ),
-}
 
 interface SerializedContent {
   compiledSource: string
@@ -58,6 +20,58 @@ export default function TrailPage({ params }: { params: { slug: string } }) {
   const [originalContent, setOriginalContent] = useState<string>('')
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Create markdown components with access to params
+  const markdownComponents = useMemo(() => ({
+    h1: ({ children }: any) => <h1 className="text-3xl font-bold mb-4 mt-8 scroll-m-20">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-2xl font-bold mb-3 mt-6 scroll-m-20">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-xl font-semibold mb-2 mt-4">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-lg font-medium mb-2 mt-4">{children}</h4>,
+    p: ({ children }: any) => <p className="mb-4 leading-relaxed">{children}</p>,
+    ul: ({ children }: any) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
+    ol: ({ children }: any) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1">{children}</li>,
+    code: ({ className, children }: any) => {
+      const isInline = !className?.includes('language-')
+      return (
+        <code className={`font-mono text-sm ${
+          isInline
+            ? 'bg-secondary/50 px-1.5 py-0.5 rounded text-primary'
+            : 'font-mono'
+        }`}>
+          {children}
+        </code>
+      )
+    },
+    pre: ({ children }: any) => (
+      <pre className="bg-secondary/50 border border-border rounded-lg p-4 mb-4 overflow-x-auto">
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
+        {children}
+      </blockquote>
+    ),
+    img: ({ src, alt }: any) => {
+      const imageSrc = src?.startsWith('http') || src?.startsWith('//')
+        ? src
+        : `/content/trails/${params.slug}/${src}`
+      return (
+        <img
+          src={imageSrc}
+          alt={alt || ''}
+          className="rounded-lg shadow-md max-w-full h-auto my-4"
+          loading="lazy"
+        />
+      )
+    },
+    a: ({ children, href }: any) => (
+      <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+  }), [params.slug])
 
   useEffect(() => {
     const loadData = async () => {
@@ -147,6 +161,18 @@ export default function TrailPage({ params }: { params: { slug: string } }) {
       {/* Main Content */}
       <article className="container mx-auto px-4 py-12 max-w-4xl">
         <header className="mb-12 border-b border-border pb-8">
+          {/* Header Image */}
+          {trail.frontmatter.image && (
+            <div className="mb-8 -mx-4 sm:-mx-8 lg:-mx-12">
+              <img
+                src={`/content/trails/${params.slug}/${trail.frontmatter.image}`}
+                alt={trail.frontmatter.title}
+                className="w-full h-64 sm:h-80 lg:h-96 object-cover rounded-lg shadow-lg"
+                loading="lazy"
+              />
+            </div>
+          )}
+
           <div className="flex items-center gap-3 mb-4">
             <Badge variant="outline" className="text-primary border-primary/30">
               {trail.frontmatter.status || 'Draft'}

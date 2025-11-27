@@ -57,7 +57,9 @@ export async function getAllTrails(): Promise<TrailData[]> {
         description: data.description || '',
         status: data.status || 'Active',
         progress: data.progress || 0,
-        slug: trailName
+        slug: trailName,
+        image: data.image,
+        tags: data.tags || []
       })
     }
   }

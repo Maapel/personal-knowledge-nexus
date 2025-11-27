@@ -13,6 +13,8 @@ export interface TrailData {
   status: 'Active' | 'Archived' | 'Mastered'
   progress: number
   slug: string
+  image?: string
+  tags?: string[]
 }
 
 export interface FieldNoteData {
