@@ -21,57 +21,64 @@ export default function TrailPage({ params }: { params: { slug: string } }) {
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Create markdown components with access to params
-  const markdownComponents = useMemo(() => ({
-    h1: ({ children }: any) => <h1 className="text-3xl font-bold mb-4 mt-8 scroll-m-20">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="text-2xl font-bold mb-3 mt-6 scroll-m-20">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="text-xl font-semibold mb-2 mt-4">{children}</h3>,
-    h4: ({ children }: any) => <h4 className="text-lg font-medium mb-2 mt-4">{children}</h4>,
-    p: ({ children }: any) => <p className="mb-4 leading-relaxed">{children}</p>,
-    ul: ({ children }: any) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
-    ol: ({ children }: any) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
-    li: ({ children }: any) => <li className="mb-1">{children}</li>,
-    code: ({ className, children }: any) => {
-      const isInline = !className?.includes('language-')
-      return (
-        <code className={`font-mono text-sm ${
-          isInline
-            ? 'bg-secondary/50 px-1.5 py-0.5 rounded text-primary'
-            : 'font-mono'
-        }`}>
+  // Create markdown components with current slug
+  const markdownComponents = useMemo(() => {
+    const slug = params.slug
+    return {
+      h1: ({ children }: any) => <h1 className="text-3xl font-bold mb-4 mt-8 scroll-m-20">{children}</h1>,
+      h2: ({ children }: any) => <h2 className="text-2xl font-bold mb-3 mt-6 scroll-m-20">{children}</h2>,
+      h3: ({ children }: any) => <h3 className="text-xl font-semibold mb-2 mt-4">{children}</h3>,
+      h4: ({ children }: any) => <h4 className="text-lg font-medium mb-2 mt-4">{children}</h4>,
+      p: ({ children }: any) => <p className="mb-4 leading-relaxed">{children}</p>,
+      ul: ({ children }: any) => <ul className="mb-4 ml-6 list-disc">{children}</ul>,
+      ol: ({ children }: any) => <ol className="mb-4 ml-6 list-decimal">{children}</ol>,
+      li: ({ children }: any) => <li className="mb-1">{children}</li>,
+      code: ({ className, children }: any) => {
+        const isInline = !className?.includes('language-')
+        return (
+          <code className={`font-mono text-sm ${
+            isInline
+              ? 'bg-secondary/50 px-1.5 py-0.5 rounded text-primary'
+              : 'font-mono'
+          }`}>
+            {children}
+          </code>
+        )
+      },
+      pre: ({ children }: any) => (
+        <pre className="bg-secondary/50 border border-border rounded-lg p-4 mb-4 overflow-x-auto">
           {children}
-        </code>
-      )
-    },
-    pre: ({ children }: any) => (
-      <pre className="bg-secondary/50 border border-border rounded-lg p-4 mb-4 overflow-x-auto">
-        {children}
-      </pre>
-    ),
-    blockquote: ({ children }: any) => (
-      <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
-        {children}
-      </blockquote>
-    ),
-    img: ({ src, alt }: any) => {
-      const imageSrc = src?.startsWith('http') || src?.startsWith('//')
-        ? src
-        : `/content/trails/${params.slug}/${src}`
-      return (
-        <img
-          src={imageSrc}
-          alt={alt || ''}
-          className="rounded-lg shadow-md max-w-full h-auto my-4"
-          loading="lazy"
-        />
-      )
-    },
-    a: ({ children, href }: any) => (
-      <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    ),
-  }), [params.slug])
+        </pre>
+      ),
+      blockquote: ({ children }: any) => (
+        <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
+          {children}
+        </blockquote>
+      ),
+      img: ({ src, alt }: any) => {
+        // Use API route directly since rewrites don't work for client-side requests
+        const imageSrc = src?.startsWith('http') || src?.startsWith('//')
+          ? src
+          : `/api/static/${slug}/${src}`
+        console.log('Image component rendering:', { src, slug, imageSrc })
+        return (
+          <img
+            src={imageSrc}
+            alt={alt || ''}
+            className="rounded-lg shadow-md max-w-full h-auto my-4"
+            loading="lazy"
+            onLoad={() => console.log('Image loaded:', imageSrc)}
+            onError={(e) => console.error('Image failed to load:', imageSrc, e)}
+          />
+        )
+      },
+      a: ({ children, href }: any) => (
+        <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          {children}
+        </a>
+      ),
+    }
+  }, [params.slug])
 
   useEffect(() => {
     const loadData = async () => {
